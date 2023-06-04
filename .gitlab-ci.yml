@@ -1,0 +1,43 @@
+variables:
+  IMAGE_NAME: airrloww/u06_typingtest
+  IMAGE_TAG: speed_typing_test
+
+stages:
+  - py_code_style
+  - lint_checks
+  - unit_tests
+  - build_image
+
+styling:
+  image: python:3.12-rc-bullseye
+  stage: py_code_style
+  script:
+    - pip install pycodestyle
+    - python3 -m pycodestyle --ignore=E501,E231 *.py
+
+linting:
+  image: python:3.12-rc-bullseye
+  stage: lint_checks
+  script:
+    - pip install pylint
+    - python3 -m pylint *.py
+
+testing:
+  image: python:3.12-rc-bullseye
+  stage: unit_tests
+  script:
+    - pip install unittest2
+    - python3 -m unittest test_typing_app.py
+
+build:
+  image: docker:latest
+  stage: build_image
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
